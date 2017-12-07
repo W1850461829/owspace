@@ -8,12 +8,18 @@ android {
         targetSdkVersion 26
         versionCode 1
         versionName "1.0"
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        vectorDrawables.useSupportLibrary = true
     }
     buildTypes {
         release {
+            buildConfigField("boolean","API_ENV","true")
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            buildConfigField("boolean","API_ENV","false")
+            minifyEnabled false
+//            signingConfig signingConfigs.config
         }
     }
 }

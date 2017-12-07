@@ -1,23 +1,40 @@
 package com.navy.owspace.view.activity;
 
 import android.Manifest;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ObjectAnimator;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.res.AssetManager;
 import android.graphics.Color;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
+import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 
 import com.navy.owspace.R;
+import com.navy.owspace.app.OwspaceApplication;
+import com.navy.owspace.di.modules.SplashModule;
 import com.navy.owspace.presenter.SplashContract;
+import com.navy.owspace.presenter.SplashPresenter;
 import com.navy.owspace.util.AppUtil;
+import com.navy.owspace.util.FileUtil;
+import com.navy.owspace.util.PreferenceUtils;
 import com.navy.owspace.view.widget.FixedImageView;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
+import java.util.Random;
 
 import javax.inject.Inject;
 
@@ -26,7 +43,12 @@ import butterknife.ButterKnife;
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
 
-public class SplashActivity extends BaseActivity implements SplashContract.View, EasyPermissions.PermissionCallbacks {
+public class
+
+
+
+
+SplashActivity extends BaseActivity implements SplashContract.View, EasyPermissions.PermissionCallbacks {
     @BindView(R.id.splash_img)
     FixedImageView splashImg;
     @Inject
@@ -42,9 +64,9 @@ public class SplashActivity extends BaseActivity implements SplashContract.View,
     };
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        /*DaggerSplashComponent.builder()
+       /* DaggerSplashComponent.builder()
                 .netComponent(OwspaceApplication.get(this).getNetComponent())
                 .splashModule(new SplashModule(this))
                 .build().inject(this);*/
@@ -84,8 +106,80 @@ public class SplashActivity extends BaseActivity implements SplashContract.View,
     }
 
     private void delaySplash() {
+        List<String> picList = FileUtil.getAllAD();
+        if (picList.size() > 0) {
+            Random random = new Random();
+            int index = random.nextInt(picList.size());
+            int imgIndex = PreferenceUtils.getPrefInt(this, "splash_img_index", 0);
+            if (index == imgIndex) {
+                if (index >= picList.size()) {
+                    index--;
 
+                } else if (imgIndex == 0) {
+                    if (index + 1 < picList.size()) {
+                        index++;
 
+                    }
+                }
+            }
+            PreferenceUtils.setPrefInt(this, "splash_img_index", index);
+            File file = new File(picList.get(index));
+            try {
+                InputStream fis = new FileInputStream(file);
+                splashImg.setImageDrawable(InputStream2Drawable(fis));
+                animWelcomeImage();
+                fis.close();
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        } else {
+            try {
+                AssetManager assetManager = this.getAssets();
+                InputStream in = assetManager.open("welcome_default.jpg");
+                splashImg.setImageDrawable(InputStream2Drawable(in));
+                animWelcomeImage();
+                in.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void animWelcomeImage() {
+        ObjectAnimator animator = ObjectAnimator.ofFloat(splashImg, "translationX", -100F);
+        animator.setDuration(1500L).start();
+        animator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationStart(Animator animation) {
+                super.onAnimationStart(animation);
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                super.onAnimationEnd(animation);
+                Intent intent = new Intent(SplashActivity.this, MainActivity.class);
+                startActivity(intent);
+                finish();
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                super.onAnimationCancel(animation);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animator animation) {
+                super.onAnimationRepeat(animation);
+            }
+        });
+    }
+
+    private Drawable InputStream2Drawable(InputStream fis) {
+        Drawable drawable = BitmapDrawable.createFromStream(fis, "splashImg");
+        return drawable;
     }
 
     @Override
